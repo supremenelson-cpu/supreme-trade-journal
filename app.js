@@ -1,6 +1,7 @@
 const STORAGE_KEY = "supremeTradeJournalMarkII";
 let trades = loadTrades();
 let editingTradeId = null;
+let calendarDate = new Date();
 const pageCopy = {
   dashboard: {
     title: "Dashboard",
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTradeForm();
   setupSearch();
   setupExport();
+  setupCalendarControls();
   renderEverything();
 });
 function loadTrades() {
@@ -55,9 +57,10 @@ function setupNavigation() {
         pageCopy[target].subtitle;
       if (target === "analytics") {
   requestAnimationFrame(() => {
-    drawPnlChart();
-    drawEquityCurve();
-  });
+  drawPnlChart();
+  drawEquityCurve();
+  renderPerformanceCalendar();
+});
 }
     }),
   );
@@ -162,12 +165,15 @@ function setupExport() {
     link.click();
     URL.revokeObjectURL(url);
   });
+  
 }
 function renderEverything() {
   renderDashboard();
   renderTradeReview();
   renderAnalytics();
+  renderPerformanceCalendar();
 }
+
 function renderDashboard() {
   const total = trades.length,
     closed = trades.filter((t) => t.outcome !== "Breakeven"),
@@ -211,6 +217,32 @@ function renderRecentTrades() {
         `<tr><td>${esc(t.date)}</td><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.strategy)}</td><td>${esc(t.setupGrade)}</td><td class="${t.pnl > 0 ? "positive" : t.pnl < 0 ? "negative" : ""}">${currency(t.pnl)}</td></tr>`,
     )
     .join("")}</tbody></table>`;
+}
+function setupCalendarControls() {
+  const previousButton = document.getElementById("calendar-prev");
+  const nextButton = document.getElementById("calendar-next");
+
+  if (!previousButton || !nextButton) return;
+
+  previousButton.addEventListener("click", () => {
+    calendarDate = new Date(
+      calendarDate.getFullYear(),
+      calendarDate.getMonth() - 1,
+      1
+    );
+
+    renderPerformanceCalendar();
+  });
+
+  nextButton.addEventListener("click", () => {
+    calendarDate = new Date(
+      calendarDate.getFullYear(),
+      calendarDate.getMonth() + 1,
+      1
+    );
+
+    renderPerformanceCalendar();
+  });
 }
 async function renderTradeReview(search = "") {
   const c = document.getElementById("trade-review-list"),
@@ -417,6 +449,98 @@ if (!Object.keys(stats).length) {
   drawPnlChart();
   drawEquityCurve();
 });
+}
+function renderPerformanceCalendar() {
+  const calendar = document.getElementById("performance-calendar");
+  const monthLabel = document.getElementById("calendar-month-label");
+
+  if (!calendar || !monthLabel) return;
+
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+
+  monthLabel.textContent = calendarDate.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric"
+  });
+
+  const dailyPerformance = {};
+
+  trades.forEach((trade) => {
+    if (!trade.date) return;
+
+    const dateParts = trade.date.split("-");
+
+    if (dateParts.length !== 3) return;
+
+    const tradeYear = Number(dateParts[0]);
+    const tradeMonth = Number(dateParts[1]) - 1;
+    const tradeDay = Number(dateParts[2]);
+
+    if (tradeYear !== year || tradeMonth !== month) return;
+
+    if (!dailyPerformance[tradeDay]) {
+      dailyPerformance[tradeDay] = {
+        pnl: 0,
+        tradeCount: 0
+      };
+    }
+
+    dailyPerformance[tradeDay].pnl += Number(trade.pnl || 0);
+    dailyPerformance[tradeDay].tradeCount += 1;
+  });
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const calendarCells = [];
+
+  for (let index = 0; index < firstDayOfMonth; index += 1) {
+    calendarCells.push('<div class="calendar-day empty"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const performance = dailyPerformance[day];
+
+    let statusClass = "";
+    let pnlHtml = "";
+    let countHtml = "";
+
+    if (performance) {
+      if (performance.pnl > 0) {
+        statusClass = "profitable";
+      } else if (performance.pnl < 0) {
+        statusClass = "losing";
+      } else {
+        statusClass = "breakeven";
+      }
+
+      pnlHtml = `
+        <strong class="calendar-pnl ${
+          performance.pnl >= 0 ? "positive" : "negative"
+        }">
+          ${currency(performance.pnl)}
+        </strong>
+      `;
+
+      countHtml = `
+        <span class="calendar-trade-count">
+          ${performance.tradeCount}
+          ${performance.tradeCount === 1 ? "trade" : "trades"}
+        </span>
+      `;
+    }
+
+    calendarCells.push(`
+      <div class="calendar-day ${statusClass}">
+        <span class="calendar-date">${day}</span>
+        ${pnlHtml}
+        ${countHtml}
+      </div>
+    `);
+  }
+
+  calendar.innerHTML = calendarCells.join("");
 }
 function drawPnlChart() {
   const canvas = document.getElementById("pnl-chart");

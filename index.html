@@ -109,6 +109,48 @@
 
 <div class="panel-heading">
   <div>
+    <article class="panel calendar-panel">
+  <div class="panel-heading calendar-heading">
+    <div>
+      <h3>Monthly Performance</h3>
+      <p>Daily net P&amp;L across the month.</p>
+    </div>
+
+    <div class="calendar-controls">
+      <button
+        id="calendar-prev"
+        class="secondary-button"
+        type="button"
+        aria-label="Previous month"
+      >
+        &larr;
+      </button>
+
+      <strong id="calendar-month-label">Month Year</strong>
+
+      <button
+        id="calendar-next"
+        class="secondary-button"
+        type="button"
+        aria-label="Next month"
+      >
+        &rarr;
+      </button>
+    </div>
+  </div>
+
+  <div class="calendar-weekdays" aria-hidden="true">
+    <span>Sun</span>
+    <span>Mon</span>
+    <span>Tue</span>
+    <span>Wed</span>
+    <span>Thu</span>
+    <span>Fri</span>
+    <span>Sat</span>
+  </div>
+
+  <div id="performance-calendar" class="performance-calendar"></div>
+</article>
     <h3>Strategy Performance</h3>
     <p>Compare decision quality and results.</p>
   </div>
