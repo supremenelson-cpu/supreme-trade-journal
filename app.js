@@ -451,6 +451,7 @@ if (!Object.keys(stats).length) {
 });
 }
 function renderPerformanceCalendar() {
+  
   const calendar = document.getElementById("performance-calendar");
   const monthLabel = document.getElementById("calendar-month-label");
 
@@ -531,8 +532,11 @@ function renderPerformanceCalendar() {
       `;
     }
 
-    calendarCells.push(`
-      <div class="calendar-day ${statusClass}">
+   calendarCells.push(`
+    <div
+        class="calendar-day ${statusClass}"
+        data-day="${day}"
+    >
         <span class="calendar-date">${day}</span>
         ${pnlHtml}
         ${countHtml}
@@ -541,6 +545,38 @@ function renderPerformanceCalendar() {
   }
 
   calendar.innerHTML = calendarCells.join("");
+  calendar
+  .querySelectorAll(".calendar-day[data-day]")
+  .forEach((dayCell) => {
+    dayCell.addEventListener("click", () => {
+      const day = Number(dayCell.dataset.day);
+
+      openCalendarDay(day);
+    });
+  });
+}
+function openCalendarDay(day) {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+
+  const dayTrades = trades.filter((trade) => {
+    if (!trade.date) return false;
+
+    const dateParts = trade.date.split("-");
+
+    if (dateParts.length !== 3) return false;
+
+    const tradeYear = Number(dateParts[0]);
+    const tradeMonth = Number(dateParts[1]) - 1;
+    const tradeDay = Number(dateParts[2]);
+
+    return (
+      tradeYear === year &&
+      tradeMonth === month &&
+      tradeDay === day
+    );
+  });
+  console.log("Calendar day trades:", dayTrades);
 }
 function drawPnlChart() {
   const canvas = document.getElementById("pnl-chart");
