@@ -1,5 +1,6 @@
 const STORAGE_KEY = "supremeTradeJournalMarkII";
 let trades = loadTrades();
+let editingTradeId = null;
 const pageCopy = {
   dashboard: {
     title: "Dashboard",
@@ -67,7 +68,7 @@ function setupTradeForm() {
     const pnlPerContract =
       (direction === "Call" ? exit - entry : entry - exit) * 100;
     const trade = {
-      id: Date.now(),
+     id: editingTradeId ?? Date.now(), 
       date: val("trade-date"),
       ticker: val("ticker").toUpperCase(),
       direction,
@@ -96,7 +97,23 @@ function setupTradeForm() {
         .map((t) => t.trim())
         .filter(Boolean),
     };
-    trades.unshift(trade);
+  if (editingTradeId !== null) {
+  const tradeIndex = trades.findIndex(
+    (item) => item.id === editingTradeId
+  );
+
+  if (tradeIndex !== -1) {
+    trades[tradeIndex] = trade;
+  }
+
+  editingTradeId = null;
+
+  form.querySelector(
+    'button[type="submit"]'
+  ).textContent = "Save Trade";
+} else {
+  trades.unshift(trade);
+}
     saveTrades();
     form.reset();
     document.getElementById("trade-date").valueAsDate = new Date();
@@ -196,7 +213,19 @@ function renderTradeReview(search = "") {
   c.innerHTML = filtered
     .map(
       (t) =>
-        `<article class="review-card"><div class="review-card-header"><div><h4>${esc(t.ticker)} — ${esc(t.direction)} — ${esc(t.strategy)}</h4><p>${esc(t.date)} · ${esc(t.outcome)} · ${currency(t.pnl)}</p></div><strong class="${t.pnl > 0 ? "positive" : t.pnl < 0 ? "negative" : ""}">${esc(t.setupGrade)} setup</strong></div><div class="chip-row"><span class="chip">Decision ${t.decisionQuality}/10</span><span class="chip">Emotion ${t.emotionalControl}/10</span>${(t.tags || []).map((tag) => `<span class="chip">${esc(tag)}</span>`).join("")}</div><p><strong>Thesis:</strong> ${esc(t.thesis)}</p><p><strong>Lesson:</strong> ${esc(t.lesson)}</p><div class="review-actions"><button class="danger-button" onclick="deleteTrade(${t.id})">Delete</button></div></article>`,
+        `<article class="review-card"><div class="review-card-header"><div><h4>${esc(t.ticker)} — ${esc(t.direction)} — ${esc(t.strategy)}</h4><p>${esc(t.date)} · ${esc(t.outcome)} · ${currency(t.pnl)}</p></div><strong class="${t.pnl > 0 ? "positive" : t.pnl < 0 ? "negative" : ""}">${esc(t.setupGrade)} setup</strong></div><div class="chip-row"><span class="chip">Decision ${t.decisionQuality}/10</span><span class="chip">Emotion ${t.emotionalControl}/10</span>${(t.tags || []).map((tag) => `<span class="chip">${esc(tag)}</span>`).join("")}</div><p><strong>Thesis:</strong> ${esc(t.thesis)}</p><p><strong>Lesson:</strong> ${esc(t.lesson)}</p><div class="review-actions">
+
+    <button class="secondary-button"
+        onclick="editTrade(${t.id})">
+        Edit
+    </button>
+
+    <button class="danger-button"
+        onclick="deleteTrade(${t.id})">
+        Delete
+    </button>
+
+</div></article>`,
     )
     .join("");
 }
@@ -289,6 +318,62 @@ function drawPnlChart() {
   ctx.fillStyle = "#94a0bd";
   ctx.fillText(currency(max), 4, padding + 4);
   ctx.fillText(currency(-max), 4, height - padding + 4);
+}
+function editTrade(id) {
+  const trade = trades.find((item) => item.id === id);
+
+  if (!trade) {
+    return;
+  }
+
+  editingTradeId = id;
+
+  document.getElementById("trade-date").value = trade.date;
+  document.getElementById("ticker").value = trade.ticker;
+  document.getElementById("direction").value = trade.direction;
+  document.getElementById("strategy").value = trade.strategy;
+  document.getElementById("entry-price").value = trade.entryPrice;
+  document.getElementById("exit-price").value = trade.exitPrice;
+  document.getElementById("contracts").value = trade.contracts;
+  document.getElementById("setup-grade").value = trade.setupGrade;
+  document.getElementById("decision-quality").value =
+    trade.decisionQuality;
+  document.getElementById("emotional-control").value =
+    trade.emotionalControl;
+
+  document.getElementById("daily-aligned").checked =
+    trade.context?.dailyAligned || false;
+
+  document.getElementById("four-hour-aligned").checked =
+    trade.context?.fourHourAligned || false;
+
+  document.getElementById("one-hour-aligned").checked =
+    trade.context?.oneHourAligned || false;
+
+  document.getElementById("fifteen-minute-aligned").checked =
+    trade.context?.fifteenMinuteAligned || false;
+
+  document.getElementById("support-resistance-checked").checked =
+    trade.context?.supportResistanceChecked || false;
+
+  document.getElementById("waited-for-entry").checked =
+    trade.context?.waitedForEntry || false;
+
+  document.getElementById("trade-thesis").value = trade.thesis;
+  document.getElementById("trade-lesson").value = trade.lesson;
+  document.getElementById("trade-tags").value =
+    (trade.tags || []).join(", ");
+
+  document.querySelector('[data-view="new-trade"]').click();
+
+  document.querySelector(
+    '#trade-form button[type="submit"]'
+  ).textContent = "Update Trade";
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
 }
 function deleteTrade(id) {
   if (!window.confirm("Delete this trade permanently?")) return;
