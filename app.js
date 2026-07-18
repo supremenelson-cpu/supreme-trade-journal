@@ -207,7 +207,7 @@ function renderRecentTrades() {
     )
     .join("")}</tbody></table>`;
 }
-function renderTradeReview(search = "") {
+async function renderTradeReview(search = "") {
   const c = document.getElementById("trade-review-list"),
     q = search.trim().toLowerCase(),
     filtered = trades.filter((t) =>
@@ -246,6 +246,60 @@ function renderTradeReview(search = "") {
 </div></article>`,
     )
     .join("");
+    const reviewCards = c.querySelectorAll(".review-card");
+
+await Promise.all(
+  filtered.map(async (trade, index) => {
+    if (!trade.chartImageId) {
+      return;
+    }
+
+    const imageRecord = await getTradeImage(
+      trade.chartImageId
+    );
+
+    if (!imageRecord?.file) {
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(
+      imageRecord.file
+    );
+
+    const imageWrapper =
+      document.createElement("div");
+
+    imageWrapper.className =
+      "trade-chart-wrapper";
+
+    const image = document.createElement("img");
+
+    image.src = imageUrl;
+    image.alt =
+      `${trade.ticker} chart screenshot`;
+
+    image.className = "trade-chart-image";
+
+    image.addEventListener(
+      "load",
+      () => URL.revokeObjectURL(imageUrl),
+      { once: true }
+    );
+
+    imageWrapper.appendChild(image);
+
+    const card = reviewCards[index];
+
+    const actions =
+      card.querySelector(".review-actions");
+
+    if (actions) {
+      card.insertBefore(imageWrapper, actions);
+    } else {
+      card.appendChild(imageWrapper);
+    }
+  })
+);
 }
 function renderAnalytics() {
   const stats = {};
