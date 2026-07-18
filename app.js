@@ -59,7 +59,7 @@ function setupNavigation() {
 }
 function setupTradeForm() {
   const form = document.getElementById("trade-form");
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const entry = num("entry-price"),
       exit = num("exit-price"),
@@ -67,10 +67,28 @@ function setupTradeForm() {
       direction = val("direction");
     const pnlPerContract =
       (direction === "Call" ? exit - entry : entry - exit) * 100;
+    const imageInput = document.getElementById("trade-image");
+
+let chartImageId = null;
+
+if (editingTradeId !== null) {
+  const existingTrade = trades.find(
+    (item) => item.id === editingTradeId
+  );
+
+  chartImageId = existingTrade?.chartImageId || null;
+}
+
+if (imageInput.files.length > 0) {
+  chartImageId = await saveTradeImage(
+    imageInput.files[0]
+  );
+}  
     const trade = {
      id: editingTradeId ?? Date.now(), 
       date: val("trade-date"),
       ticker: val("ticker").toUpperCase(),
+     chartImageId: chartImageId, 
       direction,
       strategy: val("strategy"),
       entryPrice: entry,
@@ -381,6 +399,114 @@ function deleteTrade(id) {
   saveTrades();
   renderEverything();
   showToast("Trade deleted.");
+}
+const IMAGE_DATABASE_NAME =
+  "supremeTradeJournalImages";
+
+const IMAGE_STORE_NAME = "tradeImages";
+
+function openImageDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(
+      IMAGE_DATABASE_NAME,
+      1
+    );
+
+    request.onupgradeneeded = () => {
+      const database = request.result;
+
+      if (
+        !database.objectStoreNames.contains(
+          IMAGE_STORE_NAME
+        )
+      ) {
+        database.createObjectStore(
+          IMAGE_STORE_NAME,
+          {
+            keyPath: "id"
+          }
+        );
+      }
+    };
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+
+async function saveTradeImage(file) {
+  const database = await openImageDatabase();
+
+  const imageId =
+    "image-" +
+    Date.now() +
+    "-" +
+    crypto.randomUUID();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(
+      IMAGE_STORE_NAME,
+      "readwrite"
+    );
+
+    const store = transaction.objectStore(
+      IMAGE_STORE_NAME
+    );
+
+    store.put({
+      id: imageId,
+      file: file,
+      fileName: file.name,
+      fileType: file.type,
+      createdAt: new Date().toISOString()
+    });
+
+    transaction.oncomplete = () => {
+      database.close();
+      resolve(imageId);
+    };
+
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error);
+    };
+  });
+}
+
+async function getTradeImage(imageId) {
+  if (!imageId) {
+    return null;
+  }
+
+  const database = await openImageDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(
+      IMAGE_STORE_NAME,
+      "readonly"
+    );
+
+    const store = transaction.objectStore(
+      IMAGE_STORE_NAME
+    );
+
+    const request = store.get(imageId);
+
+    request.onsuccess = () => {
+      database.close();
+      resolve(request.result || null);
+    };
+
+    request.onerror = () => {
+      database.close();
+      reject(request.error);
+    };
+  });
 }
 function val(id) {
   return document.getElementById(id).value.trim();
