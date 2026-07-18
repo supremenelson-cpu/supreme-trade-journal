@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supreme Trade Journal — Mark II</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-icon">S</div><div><h1>Supreme</h1><p>Trade Journal — Mark II</p></div></div>
+      <nav class="nav-list">
+        <button class="nav-button active" data-view="dashboard">Dashboard</button>
+        <button class="nav-button" data-view="new-trade">New Trade</button>
+        <button class="nav-button" data-view="trade-review">Trade Review</button>
+        <button class="nav-button" data-view="analytics">Analytics</button>
+      </nav>
+      <div class="sidebar-note"><strong>100-Rep Mission</strong><p>Quality decision-making is the priority.</p></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow">Supreme Trade Journal</p><h2 id="page-title">Dashboard</h2><p id="page-subtitle">Track disciplined reps, not just profits.</p></div><button id="export-data" class="secondary-button">Export Data</button></header>
+
+      <section id="dashboard" class="view active">
+        <div class="stats-grid">
+          <article class="stat-card"><span>Total Trades</span><strong id="total-trades">0</strong><small>100-rep goal</small></article>
+          <article class="stat-card"><span>Win Rate</span><strong id="win-rate">0%</strong><small>Closed trades only</small></article>
+          <article class="stat-card"><span>Net P&amp;L</span><strong id="net-pnl">$0.00</strong><small>Actual dollar result</small></article>
+          <article class="stat-card"><span>Decision Score</span><strong id="decision-score">0.0</strong><small>Average out of 10</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel"><div class="panel-heading"><div><h3>Recent Trades</h3><p>Your latest five trading reps.</p></div></div><div id="recent-trades"></div></article>
+          <article class="panel"><div class="panel-heading"><div><h3>100-Rep Progress</h3><p>Build judgment before scaling capital.</p></div></div><div class="rep-number" id="rep-number">0 / 100</div><div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div><p class="progress-message" id="progress-message">Log your first trade to begin.</p></article>
+        </div>
+      </section>
+
+      <section id="new-trade" class="view">
+        <article class="panel"><div class="panel-heading"><div><h3>Log a New Trade</h3><p>Capture the process, context, and lesson.</p></div></div>
+          <form id="trade-form">
+            <div class="form-grid">
+              <label>Trade Date<input id="trade-date" type="date" required /></label>
+              <label>Ticker<input id="ticker" type="text" maxlength="10" placeholder="SPY" required /></label>
+              <label>Direction<select id="direction" required><option value="Call">Call</option><option value="Put">Put</option></select></label>
+              <label>Strategy<select id="strategy" required><option value="Continuation">Continuation</option><option value="Pullback">Pullback</option><option value="Reversal">Reversal</option><option value="Sniper Probe">Sniper Probe</option></select></label>
+              <label>Entry Price<input id="entry-price" type="number" min="0" step="0.01" required /></label>
+              <label>Exit Price<input id="exit-price" type="number" min="0" step="0.01" required /></label>
+              <label>Contracts<input id="contracts" type="number" min="1" step="1" value="1" required /></label>
+              <label>Setup Grade<select id="setup-grade" required><option value="A+">A+</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>
+              <label>Decision Quality (1–10)<input id="decision-quality" type="number" min="1" max="10" step="1" required /></label>
+              <label>Emotional Control (1–10)<input id="emotional-control" type="number" min="1" max="10" step="1" required /></label>
+            </div>
+            <fieldset><legend>Context Checklist</legend><div class="check-grid">
+              <label><input id="daily-aligned" type="checkbox" /> Daily aligned</label>
+              <label><input id="four-hour-aligned" type="checkbox" /> 4H aligned</label>
+              <label><input id="one-hour-aligned" type="checkbox" /> 1H aligned</label>
+              <label><input id="fifteen-minute-aligned" type="checkbox" /> 15M aligned</label>
+              <label><input id="support-resistance-checked" type="checkbox" /> S/R checked</label>
+              <label><input id="waited-for-entry" type="checkbox" /> Waited for entry</label>
+            </div></fieldset>
+            <label>Trade Thesis<textarea id="trade-thesis" rows="4" placeholder="Why did this trade deserve execution?" required></textarea></label>
+            <label>Main Lesson<textarea id="trade-lesson" rows="3" placeholder="What principle will you carry forward?" required></textarea></label>
+            <label>Tags<input id="trade-tags" type="text" placeholder="Context Over Candles, EMA20, Charkey Principle" /></label>
+            <div class="form-actions"><button type="reset" class="secondary-button">Clear</button><button type="submit" class="primary-button">Save Trade</button></div>
+          </form>
+        </article>
+      </section>
+
+      <section id="trade-review" class="view"><article class="panel"><div class="panel-heading review-heading"><div><h3>Trade Review</h3><p>Inspect every rep and extract the lesson.</p></div><input id="trade-search" type="search" placeholder="Search ticker, strategy, or tag" /></div><div id="trade-review-list" class="review-list"></div></article></section>
+
+      <section id="analytics" class="view">
+        <div class="stats-grid">
+          <article class="stat-card"><span>Best Strategy</span><strong id="best-strategy">—</strong><small>By total P&amp;L</small></article>
+          <article class="stat-card"><span>A/A+ Setups</span><strong id="high-grade-rate">0%</strong><small>Quality selection rate</small></article>
+          <article class="stat-card"><span>Avg. Emotional Control</span><strong id="average-emotion">0.0</strong><small>Average out of 10</small></article>
+          <article class="stat-card"><span>Process Wins</span><strong id="process-wins">0</strong><small>Decision and emotion ≥ 8</small></article>
+        </div>
+        <div class="dashboard-grid"><article class="panel"><div class="panel-heading"><div><h3>P&amp;L by Trade</h3><p>Each bar represents one completed rep.</p></div></div><canvas id="pnl-chart" width="760" height="320"></canvas></article><article class="panel"><div class="panel-heading"><div><h3>Strategy Performance</h3><p>Compare decision quality and results.</p></div></div><div id="strategy-performance"></div></article></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
