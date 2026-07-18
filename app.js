@@ -332,16 +332,79 @@ function renderAnalytics() {
   setText("high-grade-rate", highRate.toFixed(1) + "%");
   setText("average-emotion", avgEmotion.toFixed(1));
   setText("process-wins", processWins);
-  const c = document.getElementById("strategy-performance");
-  c.innerHTML = !Object.keys(stats).length
-    ? '<div class="empty-state">No strategy data yet.</div>'
-    : Object.entries(stats)
-        .sort((a, b) => b[1].count - a[1].count)
-        .map(
-          ([strategy, s]) =>
-            `<div class="strategy-row"><strong>${esc(strategy)}</strong><span>${s.count} trade${s.count === 1 ? "" : "s"} · ${s.wins}W / ${s.losses}L · Avg decision ${average(s.decisionScores).toFixed(1)} · ${currency(s.pnl)}</span></div>`,
-        )
-        .join("");
+ const c = document.getElementById("strategy-performance");
+
+if (!Object.keys(stats).length) {
+  c.innerHTML =
+    '<div class="empty-state">No strategy data yet.</div>';
+} else {
+  const strategyRows = Object.entries(stats)
+    .sort((a, b) => b[1].pnl - a[1].pnl)
+    .map(([strategy, strategyStats]) => {
+      const completedTrades =
+        strategyStats.wins + strategyStats.losses;
+
+      const winRate = completedTrades
+        ? (strategyStats.wins / completedTrades) * 100
+        : 0;
+
+      const averageDecision = average(
+        strategyStats.decisionScores
+      );
+
+      const pnlClass =
+        strategyStats.pnl > 0
+          ? "positive"
+          : strategyStats.pnl < 0
+            ? "negative"
+            : "";
+
+      return `
+        <tr>
+          <td>
+            <strong>${esc(strategy)}</strong>
+          </td>
+
+          <td>${strategyStats.count}</td>
+
+          <td>${strategyStats.wins}</td>
+
+          <td>${strategyStats.losses}</td>
+
+          <td>${winRate.toFixed(1)}%</td>
+
+          <td>${averageDecision.toFixed(1)}</td>
+
+          <td class="${pnlClass}">
+            ${currency(strategyStats.pnl)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  c.innerHTML = `
+    <div class="analytics-table-wrapper">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Trades</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Win Rate</th>
+            <th>Avg. Decision</th>
+            <th>Net P&amp;L</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${strategyRows}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
   requestAnimationFrame(drawPnlChart);
 }
 function drawPnlChart() {

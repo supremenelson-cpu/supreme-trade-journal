@@ -18,3 +18,41 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}.app-shell{disp
   object-fit: contain;
   border-radius: 8px;
 }
+.analytics-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.analytics-table th,
+.analytics-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(138, 154, 190, 0.18);
+}
+
+.analytics-table th {
+  color: #94a3c1;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analytics-table td {
+  color: #e8edf8;
+}
+
+.analytics-table .positive {
+  color: #5ee39b;
+  font-weight: 700;
+}
+
+.analytics-table .negative {
+  color: #ff8097;
+  font-weight: 700;
+}
