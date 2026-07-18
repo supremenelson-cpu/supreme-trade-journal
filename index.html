@@ -81,11 +81,67 @@
           <article class="stat-card"><span>Avg. Emotional Control</span><strong id="average-emotion">0.0</strong><small>Average out of 10</small></article>
           <article class="stat-card"><span>Process Wins</span><strong id="process-wins">0</strong><small>Decision and emotion ≥ 8</small></article>
         </div>
-        <div class="dashboard-grid"><article class="panel"><div class="panel-heading"><div><h3>P&amp;L by Trade</h3><p>Each bar represents one completed rep.</p></div></div><canvas id="pnl-chart" width="760" height="320"></canvas></article><article class="panel"><div class="panel-heading"><div><h3>Strategy Performance</h3><p>Compare decision quality and results.</p></div></div><div id="strategy-performance"></div></article></div>
+       <div class="dashboard-grid">
+
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>P&amp;L by Trade</h3>
+        <p>Each bar represents one completed rep.</p>
+      </div>
+    </div>
+
+    <canvas id="pnl-chart" height="140"></canvas>
+  </article>
+
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Equity Curve</h3>
+        <p>Cumulative trading performance</p>
+      </div>
+    </div>
+
+    <canvas id="equity-chart" height="140"></canvas>
+  </article>
+
+</div>
+
+<div class="panel-heading">
+  <div>
+    <h3>Strategy Performance</h3>
+    <p>Compare decision quality and results.</p>
+  </div>
+</div>
+
+<div id="strategy-performance"></div> 
       </section>
     </main>
   </div>
   <div id="toast" class="toast"></div>
-  <script src="app.js"></script>
+<div id="trade-modal" class="trade-modal" aria-hidden="true">
+  <div class="trade-modal-backdrop" onclick="closeTradeModal()"></div>
+
+  <section
+    class="trade-modal-content"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="trade-modal-title"
+  >
+    <button
+      class="trade-modal-close"
+      type="button"
+      onclick="closeTradeModal()"
+      aria-label="Close trade details"
+    >
+      &times;
+    </button>
+
+    <div id="trade-modal-body">
+      <h2 id="trade-modal-title">Trade Details</h2>
+    </div>
+  </section>
+</div>
+<script src="app.js"></script>
 </body>
 </html>

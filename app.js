@@ -53,7 +53,12 @@ function setupNavigation() {
         pageCopy[target].title;
       document.getElementById("page-subtitle").textContent =
         pageCopy[target].subtitle;
-      if (target === "analytics") requestAnimationFrame(drawPnlChart);
+      if (target === "analytics") {
+  requestAnimationFrame(() => {
+    drawPnlChart();
+    drawEquityCurve();
+  });
+}
     }),
   );
 }
@@ -233,7 +238,10 @@ async function renderTradeReview(search = "") {
       (t) =>
         `<article class="review-card"><div class="review-card-header"><div><h4>${esc(t.ticker)} — ${esc(t.direction)} — ${esc(t.strategy)}</h4><p>${esc(t.date)} · ${esc(t.outcome)} · ${currency(t.pnl)}</p></div><strong class="${t.pnl > 0 ? "positive" : t.pnl < 0 ? "negative" : ""}">${esc(t.setupGrade)} setup</strong></div><div class="chip-row"><span class="chip">Decision ${t.decisionQuality}/10</span><span class="chip">Emotion ${t.emotionalControl}/10</span>${(t.tags || []).map((tag) => `<span class="chip">${esc(tag)}</span>`).join("")}</div><p><strong>Thesis:</strong> ${esc(t.thesis)}</p><p><strong>Lesson:</strong> ${esc(t.lesson)}</p><div class="review-actions">
 
-    <button class="secondary-button"
+    <button class="secondary-button" onclick="openTradeModal(${t.id})">
+  View Details
+</button>
+      <button class="secondary-button"
         onclick="editTrade(${t.id})">
         Edit
     </button>
@@ -405,7 +413,10 @@ if (!Object.keys(stats).length) {
     </div>
   `;
 }
-  requestAnimationFrame(drawPnlChart);
+  requestAnimationFrame(() => {
+  drawPnlChart();
+  drawEquityCurve();
+});
 }
 function drawPnlChart() {
   const canvas = document.getElementById("pnl-chart");
@@ -454,6 +465,137 @@ function drawPnlChart() {
   ctx.fillText(currency(max), 4, padding + 4);
   ctx.fillText(currency(-max), 4, height - padding + 4);
 }
+  function drawEquityCurve() {
+  const canvas = document.getElementById("equity-chart");
+
+  if (!canvas) return;
+
+  const context = canvas.getContext("2d");
+  const ratio = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight || 280;
+
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+
+  context.scale(ratio, ratio);
+  context.clearRect(0, 0, width, height);
+
+  const sortedTrades = [...trades].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  if (sortedTrades.length === 0) {
+    context.fillStyle = "#94a3b8";
+    context.font = "14px sans-serif";
+    context.textAlign = "center";
+    context.fillText(
+      "Your equity curve will appear after you log a trade.",
+      width / 2,
+      height / 2
+    );
+
+    return;
+  }
+
+  let runningPnl = 0;
+
+  const points = sortedTrades.map((trade) => {
+    runningPnl += Number(trade.pnl || 0);
+    return runningPnl;
+  });
+
+  const padding = {
+    top: 30,
+    right: 30,
+    bottom: 40,
+    left: 65
+  };
+
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const minimumValue = Math.min(0, ...points);
+  const maximumValue = Math.max(0, ...points);
+  const valueRange = maximumValue - minimumValue || 1;
+
+  const getX = (index) => {
+    if (points.length === 1) {
+      return padding.left + chartWidth / 2;
+    }
+
+    return padding.left + (index / (points.length - 1)) * chartWidth;
+  };
+
+  const getY = (value) =>
+    padding.top +
+    chartHeight -
+    ((value - minimumValue) / valueRange) * chartHeight;
+
+  const zeroY = getY(0);
+
+  // Zero line
+  context.beginPath();
+  context.moveTo(padding.left, zeroY);
+  context.lineTo(width - padding.right, zeroY);
+  context.strokeStyle = "rgba(148, 163, 184, 0.35)";
+  context.lineWidth = 1;
+  context.stroke();
+
+  // Equity line
+  context.beginPath();
+
+  points.forEach((value, index) => {
+    const x = getX(index);
+    const y = getY(value);
+
+    if (index === 0) {
+      context.moveTo(x, y);
+    } else {
+      context.lineTo(x, y);
+    }
+  });
+
+  context.strokeStyle =
+    points[points.length - 1] >= 0 ? "#6bd89a" : "#ff7185";
+  context.lineWidth = 3;
+  context.lineJoin = "round";
+  context.lineCap = "round";
+  context.stroke();
+
+  // Data points
+  points.forEach((value, index) => {
+    context.beginPath();
+    context.arc(getX(index), getY(value), 4, 0, Math.PI * 2);
+    context.fillStyle = value >= 0 ? "#6bd89a" : "#ff7185";
+    context.fill();
+  });
+
+  // Value labels
+  context.fillStyle = "#94a3b8";
+  context.font = "12px sans-serif";
+  context.textAlign = "right";
+
+  context.fillText(
+    currency(maximumValue),
+    padding.left - 10,
+    padding.top + 4
+  );
+
+  context.fillText(
+    currency(minimumValue),
+    padding.left - 10,
+    height - padding.bottom
+  );
+
+  context.textAlign = "center";
+  context.fillText(
+    `${sortedTrades.length} trade${sortedTrades.length === 1 ? "" : "s"}`,
+    width / 2,
+    height - 12
+  );
+}
+  
 function editTrade(id) {
   const trade = trades.find((item) => item.id === id);
 
@@ -509,6 +651,154 @@ function editTrade(id) {
     top: 0,
     behavior: "smooth",
   });
+}
+async function openTradeModal(id) {
+  const trade = trades.find((item) => item.id === id);
+
+  if (!trade) {
+    return;
+  }
+
+  const modal = document.getElementById("trade-modal");
+  const modalBody = document.getElementById("trade-modal-body");
+
+  let imageHtml = "";
+
+  if (trade.chartImageId) {
+    const imageRecord = await getTradeImage(trade.chartImageId);
+
+    if (imageRecord?.file) {
+      const imageUrl = URL.createObjectURL(imageRecord.file);
+
+      imageHtml = `
+        <div class="trade-modal-image-wrapper">
+          <img
+            class="trade-modal-image"
+            src="${imageUrl}"
+            alt="${esc(trade.ticker)} chart screenshot"
+          />
+        </div>
+      `;
+    }
+  }
+
+  const checklistItems = [
+    ["Daily EMA20 aligned", trade.context?.dailyAligned],
+    ["4H EMA20 aligned", trade.context?.fourHourAligned],
+    ["1H EMA20 aligned", trade.context?.oneHourAligned],
+    ["15M EMA20 aligned", trade.context?.fifteenMinuteAligned],
+    [
+      "Support / Resistance checked",
+      trade.context?.supportResistanceChecked
+    ],
+    ["Waited for entry", trade.context?.waitedForEntry]
+  ];
+
+  modalBody.innerHTML = `
+    <div class="trade-modal-header">
+      <div>
+        <p class="eyebrow">Trade Detail</p>
+        <h2 id="trade-modal-title">
+          ${esc(trade.ticker)} — ${esc(trade.direction)}
+        </h2>
+        <p>
+          ${esc(trade.date)} · ${esc(trade.strategy)} ·
+          ${esc(trade.setupGrade)} setup
+        </p>
+      </div>
+
+      <strong class="${trade.pnl >= 0 ? "positive" : "negative"}">
+        ${currency(trade.pnl)}
+      </strong>
+    </div>
+
+    <div class="trade-detail-grid">
+      <div>
+        <span>Entry</span>
+        <strong>${currency(trade.entryPrice)}</strong>
+      </div>
+
+      <div>
+        <span>Exit</span>
+        <strong>${currency(trade.exitPrice)}</strong>
+      </div>
+
+      <div>
+        <span>Contracts</span>
+        <strong>${trade.contracts}</strong>
+      </div>
+
+      <div>
+        <span>Decision</span>
+        <strong>${trade.decisionQuality}/10</strong>
+      </div>
+
+      <div>
+        <span>Emotion</span>
+        <strong>${trade.emotionalControl}/10</strong>
+      </div>
+
+      <div>
+        <span>Outcome</span>
+        <strong>${esc(trade.outcome)}</strong>
+      </div>
+    </div>
+
+    <section class="trade-modal-section">
+      <h3>Context Checklist</h3>
+
+      <div class="modal-checklist">
+        ${checklistItems
+          .map(
+            ([label, completed]) => `
+              <div class="${completed ? "complete" : "incomplete"}">
+                <span>${completed ? "✓" : "—"}</span>
+                ${label}
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+
+    <section class="trade-modal-section">
+      <h3>Trade Thesis</h3>
+      <p>${esc(trade.thesis || "No thesis recorded.")}</p>
+    </section>
+
+    <section class="trade-modal-section">
+      <h3>Main Lesson</h3>
+      <p>${esc(trade.lesson || "No lesson recorded.")}</p>
+    </section>
+
+    ${
+      trade.tags?.length
+        ? `
+          <section class="trade-modal-section">
+            <h3>Tags</h3>
+            <div class="chip-row">
+              ${trade.tags
+                .map((tag) => `<span class="chip">${esc(tag)}</span>`)
+                .join("")}
+            </div>
+          </section>
+        `
+        : ""
+    }
+
+    ${imageHtml}
+  `;
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+function closeTradeModal() {
+  const modal = document.getElementById("trade-modal");
+
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 }
 function deleteTrade(id) {
   if (!window.confirm("Delete this trade permanently?")) return;
